@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六年级华文｜词语与词义联线小游戏</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:"Microsoft JhengHei","Noto Sans TC",Arial,sans-serif;
+  background:linear-gradient(135deg,#eef8ff,#f8fbff 55%,#eef7f1);
+  color:#17324d;min-height:100vh;
+}
+.container{max-width:1180px;margin:auto;padding:22px 18px 35px}
+header{
+  background:white;border-radius:24px;padding:18px 24px;
+  box-shadow:0 8px 25px rgba(70,120,160,.12);margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap
+}
+h1{margin:0;font-size:30px;color:#24618a}
+.subtitle{margin:5px 0 0;color:#668096;font-size:15px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:#edf7ff;border-radius:14px;padding:9px 14px;text-align:center;min-width:90px}
+.stat b{display:block;font-size:20px;color:#24618a}
+.stat span{font-size:12px;color:#71879a}
+.progress-wrap{background:#dcecf6;height:12px;border-radius:20px;overflow:hidden;margin-bottom:16px}
+#progress{height:100%;width:0%;background:linear-gradient(90deg,#5ca9d6,#72c7ad);transition:.3s}
+.game{
+ display:grid;grid-template-columns:1fr 1fr;gap:18px;
+}
+.panel{
+ background:rgba(255,255,255,.94);border-radius:22px;padding:18px;
+ box-shadow:0 8px 25px rgba(70,120,160,.10)
+}
+.panel h2{font-size:19px;margin:0 0 12px;color:#326987}
+.list{display:grid;gap:9px}
+.item{
+ min-height:50px;padding:10px 13px;border:2px solid #d9eaf3;
+ border-radius:14px;background:#fbfeff;cursor:pointer;
+ display:flex;align-items:center;gap:9px;font-size:17px;font-weight:600;
+ transition:.18s;user-select:none
+}
+.item:hover{transform:translateY(-1px);border-color:#8fc4df;background:#f3fbff}
+.item.selected{border-color:#4f9ac4;background:#e5f5ff;box-shadow:0 0 0 3px rgba(79,154,196,.12)}
+.item.matched{border-color:#75c5a6;background:#ecfaf3;color:#28755b;cursor:default}
+.item.wrong{animation:shake .28s;border-color:#e99898;background:#fff1f1}
+.num{
+ width:28px;height:28px;border-radius:50%;background:#dff0fa;color:#2c7097;
+ display:grid;place-items:center;font-size:13px;flex:none
+}
+.matched .num{background:#cceedd;color:#28755b}
+.tip{text-align:center;color:#71879a;font-size:14px;margin:15px 0 0}
+button{
+ border:0;border-radius:15px;padding:12px 20px;font-size:16px;font-weight:700;
+ cursor:pointer;background:#367fa7;color:white;box-shadow:0 5px 12px rgba(54,127,167,.2)
+}
+button:hover{filter:brightness(1.05)}
+.bottom{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+#message{text-align:center;min-height:25px;font-weight:700;margin-top:10px}
+.modal{
+ position:fixed;inset:0;background:rgba(26,55,75,.45);display:none;
+ align-items:center;justify-content:center;padding:20px
+}
+.modal.show{display:flex}
+.card{
+ background:white;border-radius:28px;padding:30px;text-align:center;max-width:430px;width:100%;
+ box-shadow:0 20px 50px rgba(0,0,0,.2)
+}
+.card h2{font-size:30px;color:#28755b;margin:0 0 8px}
+.bigscore{font-size:54px;font-weight:800;color:#367fa7;margin:8px}
+.small{color:#71879a;line-height:1.7}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media(max-width:780px){.game{grid-template-columns:1fr}h1{font-size:25px}.item{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div>
+    <h1>🌸 词语 × 词义联线挑战</h1>
+    <div class="subtitle">六年级华文｜点击左边词语，再点击右边相应的词义</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="score">0</b><span>分数</span></div>
+    <div class="stat"><b id="count">0 / 15</b><span>完成</span></div>
+    <div class="stat"><b id="time">00:00</b><span>用时</span></div>
+  </div>
+</header>
+
+<div class="progress-wrap"><div id="progress"></div></div>
+
+<div class="game">
+  <section class="panel">
+    <h2>📚 A：词语</h2>
+    <div id="words" class="list"></div>
+  </section>
+  <section class="panel">
+    <h2>💡 B：词义</h2>
+    <div id="meanings" class="list"></div>
+  </section>
+</div>
+
+<div id="message" class="tip">先选择一个词语，再选择它的词义。配对成功会自动锁定！</div>
+<div class="bottom">
+  <button onclick="restart()">🔄 重新开始</button>
+</div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="card">
+    <h2>🎉 挑战完成！</h2>
+    <div class="bigscore" id="finalScore">100</div>
+    <div class="small" id="finalText"></div>
+    <br>
+    <button onclick="restart()">再挑战一次</button>
+  </div>
+</div>
+
+<script>
+const data = [
+ ["先贤","前代有德行、有学问，值得后人尊敬的人。"],
+ ["茶粿档","售卖茶粿等传统糕点的小摊或店铺。"],
+ ["武力","使用军事力量或强制力量。"],
+ ["欺凌","以强欺弱，欺负、压迫别人。"],
+ ["殴打","用拳头或其他方式打人。"],
+ ["恶劣","非常不好；坏到令人难以接受。"],
+ ["流氓","行为无赖、蛮横，不守规矩的人。"],
+ ["匪徒","从事抢劫、暴力等犯罪活动的坏人。"],
+ ["滥杀","毫无节制、不分对象地杀害。"],
+ ["呻吟","因痛苦、难受而发出低沉的声音。"],
+ ["鬼哭神嚎","形容声音凄厉、悲惨，令人十分害怕。"],
+ ["冤死","受到冤屈而死，死得不明不白。"],
+ ["坟场","埋葬死人的地方；墓地。"],
+ ["瘫痪","身体某些部位失去活动能力，也可指事情无法正常进行。"],
+ ["心旷神怡","心情开朗舒畅，精神愉快。"]
+];
+
+let selectedWord=null, matched=0, score=0, startTime=null, timer=null, locked=false;
+
+function shuffle(arr){return [...arr].sort(()=>Math.random()-0.5)}
+
+function render(){
+  const w=document.getElementById("words"), m=document.getElementById("meanings");
+  w.innerHTML="";m.innerHTML="";
+  shuffle(data).forEach((x,i)=>{
+    const el=document.createElement("div");
+    el.className="item word";el.dataset.key=x[0];
+    el.innerHTML=`<span class="num">${i+1}</span><span>${x[0]}</span>`;
+    el.onclick=()=>selectWord(el);w.appendChild(el);
+  });
+  shuffle(data).forEach((x,i)=>{
+    const el=document.createElement("div");
+    el.className="item meaning";el.dataset.key=x[0];
+    el.innerHTML=`<span class="num">${i+1}</span><span>${x[1]}</span>`;
+    el.onclick=()=>selectMeaning(el);m.appendChild(el);
+  });
+}
+function selectWord(el){
+  if(el.classList.contains("matched")||locked)return;
+  document.querySelectorAll(".word").forEach(x=>x.classList.remove("selected"));
+  selectedWord=el;el.classList.add("selected");
+  document.getElementById("message").textContent="现在请选择右边与它相符的词义 👇";
+}
+function selectMeaning(el){
+  if(!selectedWord||el.classList.contains("matched")||locked)return;
+  locked=true;
+  if(el.dataset.key===selectedWord.dataset.key){
+    selectedWord.classList.remove("selected");
+    selectedWord.classList.add("matched");
+    el.classList.add("matched");
+    matched++;
+    score=Math.round(matched/15*100);
+    document.getElementById("score").textContent=score;
+    document.getElementById("count").textContent=`${matched} / 15`;
+    document.getElementById("progress").style.width=(matched/15*100)+"%";
+    selectedWord=null;
+    document.getElementById("message").textContent="✨ 配对正确！继续挑战下一个！";
+    locked=false;
+    if(matched===15) finish();
+  }else{
+    selectedWord.classList.add("wrong");el.classList.add("wrong");
+    document.getElementById("message").textContent="❌ 再想一想，这两个不是一对哦！";
+    setTimeout(()=>{
+      selectedWord?.classList.remove("wrong");
+      el.classList.remove("wrong");
+      locked=false;
+    },450);
+  }
+}
+function startTimer(){
+  startTime=Date.now();
+  timer=setInterval(()=>{
+    const s=Math.floor((Date.now()-startTime)/1000);
+    document.getElementById("time").textContent=
+      String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  },1000);
+}
+function finish(){
+  clearInterval(timer);
+  const s=Math.floor((Date.now()-startTime)/1000);
+  document.getElementById("finalScore").textContent="100 分";
+  document.getElementById("finalText").innerHTML=
+    `太棒了！你已经完成全部 15 个词语。<br>用时：<b>${Math.floor(s/60)} 分 ${s%60} 秒</b><br><br>🌟 把这些词语和词义再读一遍，加深记忆！`;
+  setTimeout(()=>document.getElementById("modal").classList.add("show"),300);
+}
+function restart(){
+  clearInterval(timer);selectedWord=null;matched=0;score=0;locked=false;
+  document.getElementById("score").textContent="0";
+  document.getElementById("count").textContent="0 / 15";
+  document.getElementById("time").textContent="00:00";
+  document.getElementById("progress").style.width="0%";
+  document.getElementById("message").textContent="先选择一个词语，再选择右边相应的词义。";
+  document.getElementById("modal").classList.remove("show");
+  render();startTimer();
+}
+render();startTimer();
+</script>
+</body>
+</html>
